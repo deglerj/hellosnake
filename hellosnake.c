@@ -5,7 +5,7 @@
 void initGame();
 void updatePlayer();
 
-UINT8 i, j; // Re-usabe loop variables
+UINT8 i; // Re-usabe loop variable
 
 UINT8 playerX, playerY;
 
@@ -14,8 +14,8 @@ UINT8 playerX, playerY;
 // 1 = grass tile
 const unsigned char bkgData[] =
 {
-    0xFE,0xFF,0xFD,0xFF,0xFB,0xFF,0xF7,0xFF,
-    0xEF,0xFF,0xDF,0xFF,0xBF,0xFF,0x7F,0xFF,
+    0xFF,0xFF,0xFD,0x83,0xC1,0xBF,0xC5,0xBF,
+    0xCD,0xBF,0xDD,0xBF,0x81,0xFF,0xFF,0xFF,
     0x12,0x00,0x45,0x00,0xA0,0x00,0x0A,0x00,
     0x90,0x00,0x25,0x00,0x42,0x00,0x29,0x00
 };
@@ -23,6 +23,13 @@ const unsigned char bkgData[] =
 const UINT8 borderTiles[20] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 const UINT8 normalTiles[20] = {0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0};
 
+// Sprites
+// 0 = snake head
+const unsigned char sprites[] =
+{
+    0x24,0x24,0x5E,0x7E,0xAF,0xDB,0x8F,0xFF,
+    0x4E,0x7E,0x3C,0x3C,0x00,0x18,0x00,0x24
+};
 
 void main() {
 
@@ -32,7 +39,7 @@ void main() {
         updatePlayer();
 
         HIDE_WIN;
-        //SHOW_SPRITES;
+        SHOW_SPRITES;
         SHOW_BKG;
 
         wait_vbl_done();
@@ -57,8 +64,13 @@ void initGame() {
     }
     set_bkg_tiles(0, 17, 20, 1, borderTiles);
 
+    set_sprite_data(0, 1, sprites);
+    set_sprite_tile(0,0);
+    playerX = 64;
+    playerY = 64;
 }
 
 void updatePlayer() {
-    // Nothing yet
+    set_sprite_tile(0,0);
+    move_sprite(0,playerX,playerY);
 }
