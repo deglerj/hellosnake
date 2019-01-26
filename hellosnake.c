@@ -2,14 +2,21 @@
 #include <gb/gb.h>
 #include <gb/hardware.h>
 
+#define STOPPED 0
+#define UP 1
+#define RIGHT 2
+#define DOWN 3
+#define LEFT 4
+
 void initGame();
+void pollKeys();
 void updatePlayer();
 
 UINT8 i; // Re-usabe loop variable
 
 UINT8 playerX, playerY;
 
-UINT8 lastKeys;
+UINT8 direction = STOPPED;
 
 // Background tiles
 // 0 = border tiles
@@ -38,6 +45,7 @@ void main() {
     initGame();
 
     while(1) {
+        pollKeys();
         updatePlayer();
 
         HIDE_WIN;
@@ -72,31 +80,50 @@ void initGame() {
     playerY = 64;
 }
 
-void updatePlayer() {
+void pollKeys() {
     if(joypad() & J_DOWN) {
-        playerY++;
-        if(playerY == 145) {
-            playerY = 144;
-        }
+        direction = DOWN;
     }
-    if(joypad() & J_UP) {
-        playerY--;
-        if(playerY == 23) {
-            playerY = 24;
-        }
+    else if(joypad() & J_UP) {
+        direction = UP;
     }
-    if(joypad() & J_RIGHT) {
-        playerX++;
-        if(playerX == 153) {
-            playerX = 152;
-        }
+    else if(joypad() & J_RIGHT) {
+        direction = RIGHT;
     }
-    if(joypad() & J_LEFT) {
-        playerX--;
-        if(playerX == 15) {
-            playerX = 16;
-        }
+    else if(joypad() & J_LEFT) {
+        direction = LEFT;
     }
+
+}
+
+void updatePlayer() {
+    switch(direction) {
+        case DOWN:
+            playerY++;
+            if(playerY == 145) {
+                playerY = 144;
+            }
+            break;
+        case UP:
+            playerY--;
+            if(playerY == 23) {
+                playerY = 24;
+            }
+            break;
+        case RIGHT:
+            playerX++;
+            if(playerX == 153) {
+                playerX = 152;
+            }
+            break;
+        case LEFT:
+            playerX--;
+            if(playerX == 15) {
+                playerX = 16;
+            }
+            break;
+    }
+
 
     set_sprite_tile(0,0);
     move_sprite(0,playerX,playerY);
