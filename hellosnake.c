@@ -9,6 +9,8 @@ UINT8 i; // Re-usabe loop variable
 
 UINT8 playerX, playerY;
 
+UINT8 lastKeys;
+
 // Background tiles
 // 0 = border tiles
 // 1 = grass tile
@@ -71,6 +73,31 @@ void initGame() {
 }
 
 void updatePlayer() {
+    if(joypad() & J_DOWN) {
+        playerY++;
+        if(playerY == 145) {
+            playerY = 144;
+        }
+    }
+    if(joypad() & J_UP) {
+        playerY--;
+        if(playerY == 23) {
+            playerY = 24;
+        }
+    }
+    if(joypad() & J_RIGHT) {
+        playerX++;
+        if(playerX == 153) {
+            playerX = 152;
+        }
+    }
+    if(joypad() & J_LEFT) {
+        playerX--;
+        if(playerX == 15) {
+            playerX = 16;
+        }
+    }
+
     set_sprite_tile(0,0);
     move_sprite(0,playerX,playerY);
 }
