@@ -8,13 +8,22 @@
 #define DOWN 3
 #define LEFT 4
 
+#define MAX_LENGTH 10 // TODO rename
+#define BODY_PART_DISTANCE 5
+#define COORD_COUNT 50 // MAX_LENGTH * BODY_PART_DISTANCE
+
 void initGame();
 void pollKeys();
-void updatePlayer();
+void movePlayer();
+void drawPlayer();
+UINT8 getBodyPartCoordsIndex(UINT8);
 
-UINT8 i; // Re-usabe loop variable
+UINT8 i, j; // Re-usable counter variables
 
-UINT8 playerX, playerY;
+UINT8 playerLength = 5;
+UINT8 playerCoords[COORD_COUNT][2]; // x, y
+UINT8 playerCoordsIndex = 0; // TODO rename
+UINT8 playerCoordsLastIndex = 0;
 
 UINT8 direction = STOPPED;
 
@@ -34,10 +43,16 @@ const UINT8 normalTiles[20] = {0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0};
 
 // Sprites
 // 0 = snake head
+// 1 = dark body
+// 2 = light body
 const unsigned char sprites[] =
 {
-    0x24,0x24,0x5E,0x7E,0xAF,0xDB,0x8F,0xFF,
-    0x4E,0x7E,0x3C,0x3C,0x00,0x18,0x00,0x24
+    0x25,0x24,0x5E,0x7E,0xAF,0xDB,0x8F,0xFF,
+    0x4E,0x7E,0x3C,0x3C,0x00,0x18,0x00,0x24,
+    0x3C,0x3C,0x42,0x7E,0x81,0xFF,0x81,0xFF,
+    0x81,0xFF,0x81,0xFF,0x42,0x7E,0x3C,0x3C,
+    0x3C,0x3C,0x7E,0x42,0xFF,0x81,0xFF,0x81,
+    0xFF,0x81,0xFF,0x81,0x7E,0x42,0x3C,0x3C
 };
 
 void main() {
@@ -46,7 +61,8 @@ void main() {
 
     while(1) {
         pollKeys();
-        updatePlayer();
+        movePlayer();
+        drawPlayer();
 
         HIDE_WIN;
         SHOW_SPRITES;
@@ -74,10 +90,18 @@ void initGame() {
     }
     set_bkg_tiles(0, 17, 20, 1, borderTiles);
 
-    set_sprite_data(0, 1, sprites);
+    set_sprite_data(0, 3, sprites);
+
+    set_sprite_tile(4,2);
+    set_sprite_tile(3,1);
+    set_sprite_tile(2,2);
+    set_sprite_tile(1,1);
     set_sprite_tile(0,0);
-    playerX = 64;
-    playerY = 64;
+
+    for(i = 0; i != COORD_COUNT; i++) {
+        playerCoords[i][0] = 83;
+        playerCoords[i][1] = 84 - i;
+    }
 }
 
 void pollKeys() {
@@ -93,38 +117,55 @@ void pollKeys() {
     else if(joypad() & J_LEFT) {
         direction = LEFT;
     }
-
 }
 
-void updatePlayer() {
+void movePlayer() {
+    if(direction == STOPPED) {
+        return;
+    }
+
+    // Move coordinates array index
+    playerCoordsLastIndex = playerCoordsIndex;
+    if(playerCoordsIndex == 0) {
+        playerCoordsIndex = COORD_COUNT - 1;
+    }
+    else {
+        playerCoordsIndex--;
+    }
+
+    // Copy coordinates (one of the will be modified based on the direction)
+    playerCoords[playerCoordsIndex][0] = playerCoords[playerCoordsLastIndex][0];
+    playerCoords[playerCoordsIndex][1] = playerCoords[playerCoordsLastIndex][1];
+
+    // Move head
     switch(direction) {
         case DOWN:
-            playerY++;
-            if(playerY == 145) {
-                playerY = 144;
-            }
+            playerCoords[playerCoordsIndex][1] = playerCoords[playerCoordsLastIndex][1] + 1;
             break;
         case UP:
-            playerY--;
-            if(playerY == 23) {
-                playerY = 24;
-            }
+            playerCoords[playerCoordsIndex][1] = playerCoords[playerCoordsLastIndex][1] - 1;
             break;
         case RIGHT:
-            playerX++;
-            if(playerX == 153) {
-                playerX = 152;
-            }
+            playerCoords[playerCoordsIndex][0] = playerCoords[playerCoordsLastIndex][0] + 1;
             break;
         case LEFT:
-            playerX--;
-            if(playerX == 15) {
-                playerX = 16;
-            }
+            playerCoords[playerCoordsIndex][0] = playerCoords[playerCoordsLastIndex][0] - 1;
             break;
     }
 
+}
 
-    set_sprite_tile(0,0);
-    move_sprite(0,playerX,playerY);
+void drawPlayer() {
+    for(i = 0; i !=  playerLength; i++) {
+        j = getBodyPartCoordsIndex(i);
+        move_sprite(i, playerCoords[j][0], playerCoords[j][1]);
+    }
+}
+
+UINT8 getBodyPartCoordsIndex(UINT8 partNo) {
+    if(partNo == 0) {
+        return playerCoordsIndex;
+    }
+
+    return (playerCoordsIndex + (partNo * BODY_PART_DISTANCE)) % COORD_COUNT; //TODO optimize
 }
