@@ -8,22 +8,23 @@
 #define DOWN 3
 #define LEFT 4
 
-#define MAX_LENGTH 10 // TODO rename
+#define MAX_BODY_PARTS 10
 #define BODY_PART_DISTANCE 5
-#define COORD_COUNT 50 // MAX_LENGTH * BODY_PART_DISTANCE
+#define COORD_COUNT 50 // MAX_BODY_PARTS * BODY_PART_DISTANCE
 
 void initGame();
 void pollKeys();
 void movePlayer();
 void drawPlayer();
-UINT8 getBodyPartCoordsIndex(UINT8);
+void updateBodyPartIndexes();
 
 UINT8 i, j; // Re-usable counter variables
 
-UINT8 playerLength = 5;
+UINT8 playerBodyPartCount = 5;
 UINT8 playerCoords[COORD_COUNT][2]; // x, y
 UINT8 playerCoordsIndex = 0; // TODO rename
 UINT8 playerCoordsLastIndex = 0;
+UINT8 playerBodyPartIndexes[MAX_BODY_PARTS];
 
 UINT8 direction = STOPPED;
 
@@ -62,6 +63,7 @@ void main() {
     while(1) {
         pollKeys();
         movePlayer();
+        updateBodyPartIndexes();
         drawPlayer();
 
         HIDE_WIN;
@@ -156,16 +158,21 @@ void movePlayer() {
 }
 
 void drawPlayer() {
-    for(i = 0; i !=  playerLength; i++) {
-        j = getBodyPartCoordsIndex(i);
+    for(i = 0; i != playerBodyPartCount; i++) {
+        j = playerBodyPartIndexes[i];
         move_sprite(i, playerCoords[j][0], playerCoords[j][1]);
     }
 }
 
-UINT8 getBodyPartCoordsIndex(UINT8 partNo) {
-    if(partNo == 0) {
-        return playerCoordsIndex;
-    }
+void updateBodyPartIndexes() {
+    j = playerCoordsIndex;
+    for(i = 0; i != playerBodyPartCount; i++) {
+        playerBodyPartIndexes[i] = j;
 
-    return (playerCoordsIndex + (partNo * BODY_PART_DISTANCE)) % COORD_COUNT; //TODO optimize
+        j += BODY_PART_DISTANCE;
+
+        if(j >= COORD_COUNT) {
+            j -= COORD_COUNT;
+        }
+    }
 }
