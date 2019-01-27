@@ -20,11 +20,11 @@ void updateBodyPartIndexes();
 
 UINT8 i, j; // Re-usable counter variables
 
-UINT8 playerBodyPartCount = 5;
-UINT8 playerCoords[COORD_COUNT][2]; // x, y
-UINT8 playerCoordsIndex = 0; // TODO rename
-UINT8 playerCoordsLastIndex = 0;
-UINT8 playerBodyPartIndexes[MAX_BODY_PARTS];
+UINT8 bodyPartCount = 5;
+UINT8 coords[COORD_COUNT][2]; // x, y
+UINT8 coordsIndex = 0; // TODO rename
+UINT8 coordsLastIndex = 0;
+UINT8 bodyPartIndexes[MAX_BODY_PARTS];
 
 UINT8 direction = STOPPED;
 
@@ -101,8 +101,8 @@ void initGame() {
     set_sprite_tile(0,0);
 
     for(i = 0; i != COORD_COUNT; i++) {
-        playerCoords[i][0] = 83;
-        playerCoords[i][1] = 84 - i;
+        coords[i][0] = 83;
+        coords[i][1] = 84 - i;
     }
 }
 
@@ -127,47 +127,47 @@ void movePlayer() {
     }
 
     // Move coordinates array index
-    playerCoordsLastIndex = playerCoordsIndex;
-    if(playerCoordsIndex == 0) {
-        playerCoordsIndex = COORD_COUNT - 1;
+    coordsLastIndex = coordsIndex;
+    if(coordsIndex == 0) {
+        coordsIndex = COORD_COUNT - 1;
     }
     else {
-        playerCoordsIndex--;
+        coordsIndex--;
     }
 
     // Copy coordinates (one of the will be modified based on the direction)
-    playerCoords[playerCoordsIndex][0] = playerCoords[playerCoordsLastIndex][0];
-    playerCoords[playerCoordsIndex][1] = playerCoords[playerCoordsLastIndex][1];
+    coords[coordsIndex][0] = coords[coordsLastIndex][0];
+    coords[coordsIndex][1] = coords[coordsLastIndex][1];
 
     // Move head
     switch(direction) {
         case DOWN:
-            playerCoords[playerCoordsIndex][1] = playerCoords[playerCoordsLastIndex][1] + 1;
+            coords[coordsIndex][1] = coords[coordsLastIndex][1] + 1;
             break;
         case UP:
-            playerCoords[playerCoordsIndex][1] = playerCoords[playerCoordsLastIndex][1] - 1;
+            coords[coordsIndex][1] = coords[coordsLastIndex][1] - 1;
             break;
         case RIGHT:
-            playerCoords[playerCoordsIndex][0] = playerCoords[playerCoordsLastIndex][0] + 1;
+            coords[coordsIndex][0] = coords[coordsLastIndex][0] + 1;
             break;
         case LEFT:
-            playerCoords[playerCoordsIndex][0] = playerCoords[playerCoordsLastIndex][0] - 1;
+            coords[coordsIndex][0] = coords[coordsLastIndex][0] - 1;
             break;
     }
 
 }
 
 void drawPlayer() {
-    for(i = 0; i != playerBodyPartCount; i++) {
-        j = playerBodyPartIndexes[i];
-        move_sprite(i, playerCoords[j][0], playerCoords[j][1]);
+    for(i = 0; i != bodyPartCount; i++) {
+        j = bodyPartIndexes[i];
+        move_sprite(i, coords[j][0], coords[j][1]);
     }
 }
 
 void updateBodyPartIndexes() {
-    j = playerCoordsIndex;
-    for(i = 0; i != playerBodyPartCount; i++) {
-        playerBodyPartIndexes[i] = j;
+    j = coordsIndex;
+    for(i = 0; i != bodyPartCount; i++) {
+        bodyPartIndexes[i] = j;
 
         j += BODY_PART_DISTANCE;
 
