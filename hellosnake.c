@@ -9,23 +9,25 @@
 #define DOWN 3
 #define LEFT 4
 
-#define MAX_BODY_PARTS 10
-#define BODY_PART_DISTANCE 8
-#define COORD_COUNT 80 // MAX_BODY_PARTS * BODY_PART_DISTANCE
+#define FIELD_WIDTH 18
+#define FIELD_HEIGHT 16
+
+#define MAX_PLAYER_LENGTH 10 // TODO increase
+#define SPRITE_SIZE 8
 
 void initGame();
 void pollKeys();
 void movePlayer();
 void drawPlayer();
-void updateBodyPartIndexes();
+UINT8 mapPlayerXToFieldCoords(UINT8 playerX);
+UINT8 mapPlayerYToFieldCoords(UINT8 playerY);
 
 UINT8 i, j; // Re-usable counter variables
 
-UINT8 bodyPartCount = 10;
-UINT8 coords[COORD_COUNT][2]; // x, y
-UINT8 coordsIndex = 0; // TODO rename
-UINT8 coordsLastIndex = 0;
-UINT8 bodyPartIndexes[MAX_BODY_PARTS];
+UINT8 playerLength = 4;
+UINT8 playerCoords[MAX_PLAYER_LENGTH][2];
+
+UINT8 vFrameCount = -1;
 
 UINT8 direction = STOPPED;
 
@@ -58,14 +60,19 @@ const unsigned char sprites[] =
 };
 
 void main() {
-
     initGame();
 
     while(1) {
         pollKeys();
-        movePlayer();
-        updateBodyPartIndexes();
-        drawPlayer();
+
+        if(vFrameCount == 10) {
+            movePlayer();
+            drawPlayer();
+            vFrameCount = 0;
+        }
+        else {
+            vFrameCount++;
+        }
 
         HIDE_WIN;
         SHOW_SPRITES;
@@ -96,13 +103,13 @@ void initGame() {
     set_sprite_data(0, 3, sprites);
 
     set_sprite_tile(0,0);
-    for(i = 1; i != MAX_BODY_PARTS; i++) {
+    for(i = 1; i != MAX_PLAYER_LENGTH; i++) {
         set_sprite_tile(i, (i % 2) + 1);
     }
 
-    for(i = 0; i != COORD_COUNT; i++) {
-        coords[i][0] = 83;
-        coords[i][1] = 84 - i;
+    for(i = 0; i != playerLength; i++) {
+        playerCoords[i][0] = FIELD_WIDTH / 2;
+        playerCoords[i][1] = (FIELD_HEIGHT / 2) - i;
     }
 }
 
@@ -126,53 +133,41 @@ void movePlayer() {
         return;
     }
 
-    // Move coordinates array index
-    coordsLastIndex = coordsIndex;
-    if(coordsIndex == 0) {
-        coordsIndex = COORD_COUNT - 1;
+    // Move tail
+    for(i = playerLength - 1; i != 0; i--) {
+        playerCoords[i][0] = playerCoords[i-1][0];
+        playerCoords[i][1] = playerCoords[i-1][1];
     }
-    else {
-        coordsIndex--;
-    }
-
-    // Copy coordinates (one of the will be modified based on the direction)
-    coords[coordsIndex][0] = coords[coordsLastIndex][0];
-    coords[coordsIndex][1] = coords[coordsLastIndex][1];
 
     // Move head
     switch(direction) {
         case DOWN:
-            coords[coordsIndex][1] = coords[coordsLastIndex][1] + 1;
+            playerCoords[0][1] += 1;
             break;
         case UP:
-            coords[coordsIndex][1] = coords[coordsLastIndex][1] - 1;
+            playerCoords[0][1] -= 1;
             break;
         case RIGHT:
-            coords[coordsIndex][0] = coords[coordsLastIndex][0] + 1;
+            playerCoords[0][0] += 1;
             break;
         case LEFT:
-            coords[coordsIndex][0] = coords[coordsLastIndex][0] - 1;
+            playerCoords[0][0] -= 1;
             break;
     }
 
 }
 
 void drawPlayer() {
-    for(i = 0; i != bodyPartCount; i++) {
-        j = bodyPartIndexes[i];
-        move_sprite(i, coords[j][0], coords[j][1]);
+    for(i = 0; i != playerLength; i++) {
+        move_sprite(i, mapPlayerXToFieldCoords(playerCoords[i][0]), mapPlayerYToFieldCoords(playerCoords[i][1]));
     }
 }
 
-void updateBodyPartIndexes() {
-    j = coordsIndex;
-    for(i = 0; i != bodyPartCount; i++) {
-        bodyPartIndexes[i] = j;
+// TODO optimize by precalculating the mapping
+UINT8 mapPlayerXToFieldCoords(UINT8 playerX) {
+    return 16 + (playerX * SPRITE_SIZE);
+}
 
-        j += BODY_PART_DISTANCE;
-
-        if(j >= COORD_COUNT) {
-            j -= COORD_COUNT;
-        }
-    }
+UINT8 mapPlayerYToFieldCoords(UINT8 playerY) {
+    return 24 + (playerY * SPRITE_SIZE);
 }
