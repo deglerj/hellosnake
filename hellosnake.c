@@ -100,6 +100,7 @@ void initGame() {
     }
     set_bkg_tiles(0, 17, 20, 1, borderTiles);
 
+    // Init sprites
     set_sprite_data(0, 3, sprites);
 
     set_sprite_tile(0,0);
@@ -107,9 +108,18 @@ void initGame() {
         set_sprite_tile(i, (i % 2) + 1);
     }
 
+    // Start player at center coords
     for(i = 0; i != playerLength; i++) {
         playerCoords[i][0] = FIELD_WIDTH / 2;
         playerCoords[i][1] = (FIELD_HEIGHT / 2) - i;
+    }
+
+    // Precalculate coord mappings
+    for(i = 0; i < FIELD_WIDTH; i++) {
+        xToFieldCoordsCache[i] = 16 + (i * SPRITE_SIZE);
+    }
+    for(i = 0; i < FIELD_HEIGHT; i++) {
+        yToFieldCoordsCache[i] = 24 + (i * SPRITE_SIZE);
     }
 }
 
@@ -163,11 +173,10 @@ void drawPlayer() {
     }
 }
 
-// TODO optimize by precalculating the mapping
 UINT8 mapPlayerXToFieldCoords(UINT8 playerX) {
-    return 16 + (playerX * SPRITE_SIZE);
+    return xToFieldCoordsCache[playerX];
 }
 
 UINT8 mapPlayerYToFieldCoords(UINT8 playerY) {
-    return 24 + (playerY * SPRITE_SIZE);
+    return yToFieldCoordsCache[playerY];
 }
