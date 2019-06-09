@@ -2,6 +2,7 @@
 #include <gb/gb.h>
 #include <gb/hardware.h>
 #include <gb/drawing.h>
+#include <stdio.h>
 
 #define STOPPED 0
 #define UP 1
@@ -21,11 +22,13 @@ void movePlayer();
 void drawPlayer();
 UINT8 mapPlayerXToFieldCoords(UINT8 playerX);
 UINT8 mapPlayerYToFieldCoords(UINT8 playerY);
+UINT8 getPlayerCoordsIndex(UINT8 offset);
 
-UINT8 i, j; // Re-usable counter variables
+UINT8 i, j, k; // Re-usable variables
 
 UINT8 playerLength = 14;
 UINT8 playerCoords[MAX_PLAYER_LENGTH][2];
+UINT8 playerCoordsIndex = 0;
 
 UINT8 xToFieldCoordsCache[FIELD_WIDTH];
 UINT8 yToFieldCoordsCache[FIELD_HEIGHT];
@@ -68,7 +71,6 @@ unsigned char spriteData[] =
 
 void main() {
     initGame();
-
     while(1) {
         pollKeys();
 
@@ -84,6 +86,7 @@ void main() {
         HIDE_WIN;
         SHOW_SPRITES;
         SHOW_BKG;
+        //printf("%u,%u! ", playerCoords[playerCoordsIndex][0], playerCoords[playerCoordsIndex][1]);
 
         wait_vbl_done();
     }
@@ -107,8 +110,8 @@ void initGame() {
 
     // Start player at center coords
     for(i = 0; i != playerLength; i++) {
-        playerCoords[i][0] = FIELD_WIDTH / 2;
-        playerCoords[i][1] = (FIELD_HEIGHT / 2) - i;
+        playerCoords[getPlayerCoordsIndex(i)][0] = FIELD_WIDTH / 2;
+        playerCoords[getPlayerCoordsIndex(i)][1] = (FIELD_HEIGHT / 2) - i;
     }
 
     // Precalculate coord mappings
@@ -140,27 +143,33 @@ void movePlayer() {
         return;
     }
 
-    // Move tail
-    for(i = playerLength - 1; i != 0; i--) {
-        playerCoords[i][0] = playerCoords[i-1][0];
-        playerCoords[i][1] = playerCoords[i-1][1];
+    // Move coords array index to next position
+    playerCoordsIndex--;
+    if(playerCoordsIndex == -1) {
+        playerCoordsIndex = MAX_PLAYER_LENGTH - 1;
     }
 
     // Move head
+    k = getPlayerCoordsIndex(1);
     switch(direction) {
         case DOWN:
-            playerCoords[0][1] += 1;
+            playerCoords[playerCoordsIndex][0] = playerCoords[k][0];
+            playerCoords[playerCoordsIndex][1] = playerCoords[k][1] + 1;
             break;
         case UP:
-            playerCoords[0][1] -= 1;
+            playerCoords[playerCoordsIndex][0] = playerCoords[k][0];
+            playerCoords[playerCoordsIndex][1] = playerCoords[k][1] - 1;
             break;
         case RIGHT:
-            playerCoords[0][0] += 1;
+            playerCoords[playerCoordsIndex][0] = playerCoords[k][0] + 1;
+            playerCoords[playerCoordsIndex][1] = playerCoords[k][1];
             break;
         case LEFT:
-            playerCoords[0][0] -= 1;
+            playerCoords[playerCoordsIndex][0] = playerCoords[k][0] - 1;
+            playerCoords[playerCoordsIndex][1] = playerCoords[k][1];
             break;
     }
+
 
 }
 
@@ -173,15 +182,16 @@ void drawPlayer() {
 
         // Add player tiles to background row
         for(j = playerLength - 1; j != -1; j--) {
-            if(playerCoords[j][1] == i - 1) {
+            k = getPlayerCoordsIndex(j);
+            if(playerCoords[k][1] == i - 1) {
                 if(j == 0) {
-                    backgroundTiles[i][playerCoords[j][0]] = 1;
+                    backgroundTiles[i][playerCoords[k][0]] = 1;
                 }
                 else if(j & 1) {
-                    backgroundTiles[i][playerCoords[j][0]] = 2;
+                    backgroundTiles[i][playerCoords[k][0]] = 2;
                 }
                 else {
-                    backgroundTiles[i][playerCoords[j][0]] = 3;
+                    backgroundTiles[i][playerCoords[k][0]] = 3;
                 }
            }
         }
@@ -201,4 +211,16 @@ UINT8 mapPlayerXToFieldCoords(UINT8 playerX) {
 
 UINT8 mapPlayerYToFieldCoords(UINT8 playerY) {
     return yToFieldCoordsCache[playerY];
+}
+
+UINT8 getPlayerCoordsIndex(UINT8 offset) {
+    if(playerCoordsIndex + offset >= MAX_PLAYER_LENGTH) {
+        return playerCoordsIndex + offset - MAX_PLAYER_LENGTH;
+    }
+    else if(playerCoordsIndex + offset < 0) {
+        return playerCoordsIndex + offset + MAX_PLAYER_LENGTH;
+    }
+    else {
+        return playerCoordsIndex + offset;
+    }
 }
