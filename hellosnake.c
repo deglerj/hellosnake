@@ -12,7 +12,7 @@
 #define FIELD_WIDTH 18
 #define FIELD_HEIGHT 16
 
-#define MAX_PLAYER_LENGTH 10 // TODO increase
+#define MAX_PLAYER_LENGTH 100
 #define SPRITE_SIZE 8
 
 void initGame();
@@ -24,8 +24,11 @@ UINT8 mapPlayerYToFieldCoords(UINT8 playerY);
 
 UINT8 i, j; // Re-usable counter variables
 
-UINT8 playerLength = 4;
+UINT8 playerLength = 14;
 UINT8 playerCoords[MAX_PLAYER_LENGTH][2];
+
+UINT8 xToFieldCoordsCache[FIELD_WIDTH];
+UINT8 yToFieldCoordsCache[FIELD_HEIGHT];
 
 UINT8 vFrameCount = -1;
 
@@ -33,31 +36,35 @@ UINT8 direction = STOPPED;
 
 // Background tiles
 // 0 = border tiles
-// 1 = grass tile
+// 1 = snake head
+// 2 = body 1
+// 3 = body 2
+// 4 = blank
 const unsigned char bkgData[] =
 {
-    0xFF,0xFF,0xFD,0x83,0xC1,0xBF,0xC5,0xBF,
-    0xCD,0xBF,0xDD,0xBF,0x81,0xFF,0xFF,0xFF,
-    0x12,0x00,0x45,0x00,0xA0,0x00,0x0A,0x00,
-    0x90,0x00,0x25,0x00,0x42,0x00,0x29,0x00
+  0xFF,0xFF,0xFD,0x83,0xC1,0xBF,0xC4,0xBE,
+  0xCD,0xBF,0xDD,0xBD,0x81,0xF7,0x9F,0x9F,
+  0x24,0x24,0x5E,0x7E,0xAF,0xDB,0x8F,0xFF,
+  0x4E,0x7E,0x3C,0x3C,0x00,0x18,0x00,0x24,
+  0x7E,0x7E,0x81,0xFF,0x81,0xFF,0x81,0xFF,
+  0x81,0xFF,0x81,0xFF,0x81,0xFF,0x7E,0x7E,
+  0x7E,0x7E,0xFF,0x81,0xFF,0x81,0xFF,0x81,
+  0xFF,0x81,0xFF,0x81,0xFF,0x81,0x7E,0x7E,
+  0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+  0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
 };
 
-const UINT8 borderTiles[20] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-const UINT8 normalTiles[20] = {0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0};
+UINT8 backgroundTiles[17][20] = {{0}};
 
-// Sprites
-// 0 = snake head
-// 1 = dark body
-// 2 = light body
-const unsigned char sprites[] =
+
+// Sprite tiles
+// 0 = blank
+unsigned char spriteData[] =
 {
-    0x25,0x24,0x5E,0x7E,0xAF,0xDB,0x8F,0xFF,
-    0x4E,0x7E,0x3C,0x3C,0x00,0x18,0x00,0x24,
-    0x7E,0x7E,0x81,0xFF,0x81,0xFF,0x81,0xFF,
-    0x81,0xFF,0x81,0xFF,0x81,0xFF,0x7E,0x7E,
-    0x7E,0x7E,0xFF,0x81,0xFF,0x81,0xFF,0x81,
-    0xFF,0x81,0xFF,0x81,0xFF,0x81,0x7E,0x7E
+  0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+  0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
 };
+
 
 void main() {
     initGame();
@@ -65,7 +72,7 @@ void main() {
     while(1) {
         pollKeys();
 
-        if(vFrameCount == 10) {
+        if(vFrameCount == 5) {
             movePlayer();
             drawPlayer();
             vFrameCount = 0;
@@ -91,21 +98,11 @@ void initGame() {
 
     initrand(DIV_REG); // Seed randomizer
 
-    set_bkg_data(0, 2, bkgData); // Store background data in BGK VRAM
+    set_bkg_data(0, 5, bkgData); // Store background data in BGK VRAM
 
-    // Draw background (first and last row uses border tiles, rest normal tiles)
-    set_bkg_tiles(0, 0, 20, 1, borderTiles);
-    for(i = 1; i != 17; i++) {
-        set_bkg_tiles(0, i, 20, 1, normalTiles);
-    }
-    set_bkg_tiles(0, 17, 20, 1, borderTiles);
-
-    // Init sprites
-    set_sprite_data(0, 3, sprites);
-
-    set_sprite_tile(0,0);
-    for(i = 1; i != MAX_PLAYER_LENGTH; i++) {
-        set_sprite_tile(i, (i % 2) + 1);
+    // Draw initial background
+    for(i = 0; i != 18; i++) {
+        set_bkg_tiles(0, i, 20, 1, backgroundTiles[0]);
     }
 
     // Start player at center coords
@@ -115,10 +112,10 @@ void initGame() {
     }
 
     // Precalculate coord mappings
-    for(i = 0; i < FIELD_WIDTH; i++) {
+    for(i = 0; i != FIELD_WIDTH; i++) {
         xToFieldCoordsCache[i] = 16 + (i * SPRITE_SIZE);
     }
-    for(i = 0; i < FIELD_HEIGHT; i++) {
+    for(i = 0; i != FIELD_HEIGHT; i++) {
         yToFieldCoordsCache[i] = 24 + (i * SPRITE_SIZE);
     }
 }
@@ -168,8 +165,33 @@ void movePlayer() {
 }
 
 void drawPlayer() {
-    for(i = 0; i != playerLength; i++) {
-        move_sprite(i, mapPlayerXToFieldCoords(playerCoords[i][0]), mapPlayerYToFieldCoords(playerCoords[i][1]));
+    for(i = 1; i != FIELD_HEIGHT + 1; i++) {
+        // Reset background tile row
+        for(j = 1; j != FIELD_WIDTH + 1; j++) {
+            backgroundTiles[i][j] = 4;
+        }
+
+        // Add player tiles to background row
+        for(j = playerLength - 1; j != -1; j--) {
+            if(playerCoords[j][1] == i - 1) {
+                if(j == 0) {
+                    backgroundTiles[i][playerCoords[j][0]] = 1;
+                }
+                else if(j & 1) {
+                    backgroundTiles[i][playerCoords[j][0]] = 2;
+                }
+                else {
+                    backgroundTiles[i][playerCoords[j][0]] = 3;
+                }
+           }
+        }
+
+        // Re-draw border (in case it was overwritten)
+         backgroundTiles[i][0] = 0;
+         backgroundTiles[i][19] = 0;
+
+
+       set_bkg_tiles(0, i, 20, 1, backgroundTiles[i]);
     }
 }
 
