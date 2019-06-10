@@ -22,10 +22,11 @@ void drawPlayer();
 UINT8 mapPlayerXToFieldCoords(UINT8 playerX);
 UINT8 mapPlayerYToFieldCoords(UINT8 playerY);
 UINT8 getPlayerCoordsIndex(UINT8 offset);
+UINT8 getTailDirection();
 
-UINT8 i, j, k; // Re-usable variables
+UINT8 i, j, k, l; // Re-usable variables
 
-UINT8 playerLength = 40;
+UINT8 playerLength = 8;
 UINT8 playerCoords[MAX_PLAYER_LENGTH + 1][2];
 UINT8 playerCoordsIndex = 0;
 
@@ -68,13 +69,13 @@ const unsigned char bkgData[] =
   0xFF,0xFF,0x81,0xFF,0x81,0xFF,0x81,0xFF,
   0x81,0xFF,0x81,0xFF,0x81,0xFF,0xFF,0xFF,
   0x00,0xFF,0x7E,0x81,0x7E,0x81,0x7E,0x81,
-  0x7E,0x81,0x3C,0xC3,0x00,0x7E,0x00,0x00,
-  0x00,0x3F,0x1E,0x61,0x3E,0x41,0x3E,0x41,
-  0x3E,0x41,0x3E,0x41,0x1E,0x61,0x00,0x3F,
-  0x00,0x00,0x00,0x7E,0x3C,0xC3,0x7E,0x81,
+  0x7E,0x81,0x3C,0x7E,0x18,0x3C,0x18,0x18,
+  0x00,0x1F,0x1E,0x21,0x3E,0x61,0xFE,0xE1,
+  0xFE,0xE1,0x3E,0x61,0x1E,0x21,0x00,0x1F,
+  0x18,0x18,0x18,0x3C,0x3C,0x7E,0x7E,0x81,
   0x7E,0x81,0x7E,0x81,0x7E,0x81,0x00,0xFF,
-  0x00,0xFC,0x78,0x86,0x7C,0x82,0x7C,0x82,
-  0x7C,0x82,0x7C,0x82,0x78,0x86,0x00,0xFC
+  0x00,0xF8,0x78,0x84,0x7C,0x86,0x7F,0x87,
+  0x7F,0x87,0x7C,0x86,0x78,0x84,0x00,0xF8
 };
 
 UINT8 singleTile[1] = {0};
@@ -96,7 +97,7 @@ void main() {
     while(1) {
         pollKeys();
 
-        if(vFrameCount == 5) {
+        if(vFrameCount == 8) {
             movePlayer();
             drawPlayer();
             vFrameCount = 0;
@@ -226,7 +227,20 @@ void drawPlayer() {
         }
         // Tail
         else if(j == playerLength - 1) {
-            singleTile[0] = 10;
+            switch(getTailDirection()) {
+                case DOWN:
+                    singleTile[0] = 8;
+                    break;
+                case LEFT:
+                    singleTile[0] = 9;
+                    break;
+                case UP:
+                    singleTile[0] = 10;
+                    break;
+                case RIGHT:
+                    singleTile[0] = 11;
+                    break;
+            }
         }
         // Body variants
         else {
@@ -254,5 +268,22 @@ UINT8 getPlayerCoordsIndex(UINT8 offset) {
     }
     else {
         return playerCoordsIndex + offset;
+    }
+}
+
+UINT8 getTailDirection() {
+    i = getPlayerCoordsIndex(playerLength - 1);
+    l = getPlayerCoordsIndex(playerLength - 2);
+    if(playerCoords[i][0] == playerCoords[l][0] - 1) {
+        return LEFT;
+    }
+    else if(playerCoords[i][0] == playerCoords[l][0] + 1) {
+        return RIGHT;
+    }
+    else if(playerCoords[i][1] == playerCoords[l][1] - 1) {
+        return UP;
+    }
+    else {
+        return DOWN;
     }
 }
