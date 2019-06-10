@@ -206,17 +206,31 @@ void drawPlayer() {
 
     // Draw player tiles
     for(j = playerLength - 1; j != -1; j--) {
+        // Head
         if(j == 0) {
-            singleTile[0] = 2;
+            switch(direction) {
+                case DOWN:
+                case STOPPED:
+                    singleTile[0] = 2;
+                    break;
+                case LEFT:
+                    singleTile[0] = 3;
+                    break;
+                case UP:
+                    singleTile[0] = 4;
+                    break;
+                case RIGHT:
+                    singleTile[0] = 5;
+                    break;
+            }
         }
+        // Tail
         else if(j == playerLength - 1) {
             singleTile[0] = 10;
         }
-        else if(j & 1) {
-            singleTile[0] = 7;
-        }
+        // Body variants
         else {
-            singleTile[0] = 6;
+            singleTile[0] = j & 1 ? 7 : 6;
         }
         k = getPlayerCoordsIndex(j);
         set_bkg_tiles(playerCoords[k][0], playerCoords[k][1], 1, 1, singleTile);
